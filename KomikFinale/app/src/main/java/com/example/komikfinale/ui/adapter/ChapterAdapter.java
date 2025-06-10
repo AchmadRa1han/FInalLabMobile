@@ -2,6 +2,7 @@ package com.example.komikfinale.ui.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.komikfinale.R;
 import com.example.komikfinale.model.Chapter;
 import com.example.komikfinale.ui.reader.ReaderActivity;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class ChapterAdapter extends RecyclerView.Adapter<ChapterAdapter.ChapterViewHolder> {
@@ -37,6 +40,7 @@ public class ChapterAdapter extends RecyclerView.Adapter<ChapterAdapter.ChapterV
         String chapterNumber = attributes.getChapter();
         String chapterTitle = attributes.getTitle();
 
+        // Membuat teks tampilan yang lebih informatif
         String displayText = "Chapter " + chapterNumber;
         if (chapterTitle != null && !chapterTitle.isEmpty()) {
             displayText += ": " + chapterTitle;
@@ -44,9 +48,22 @@ public class ChapterAdapter extends RecyclerView.Adapter<ChapterAdapter.ChapterV
 
         holder.tvChapterTitle.setText(displayText);
 
+        // --- PERUBAHAN UTAMA ADA DI SINI ---
         holder.itemView.setOnClickListener(v -> {
+            // 1. Kumpulkan semua ID chapter dari daftar
+            ArrayList<String> chapterIds = new ArrayList<>();
+            for (Chapter ch : chapterList) {
+                chapterIds.add(ch.getId());
+            }
+
+            // 2. Buat Intent
             Intent intent = new Intent(context, ReaderActivity.class);
-            intent.putExtra(ReaderActivity.EXTRA_CHAPTER_ID, chapter.getId());
+
+            // 3. Kirim SELURUH daftar ID dan POSISI chapter yang diklik
+            intent.putStringArrayListExtra(ReaderActivity.EXTRA_CHAPTER_IDS, chapterIds);
+            intent.putExtra(ReaderActivity.EXTRA_CHAPTER_POSITION, position);
+
+            // 4. Mulai Activity
             context.startActivity(intent);
         });
     }

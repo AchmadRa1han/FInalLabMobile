@@ -15,10 +15,13 @@ public class PageAdapter extends RecyclerView.Adapter<PageAdapter.PageViewHolder
 
     private final List<String> pageUrls;
     private final Context context;
+    private final View.OnClickListener clickListener; // <-- TAMBAHKAN INI
 
-    public PageAdapter(Context context, List<String> pageUrls) {
+    // UBAH CONSTRUCTOR UNTUK MENERIMA ONCLICKLISTENER
+    public PageAdapter(Context context, List<String> pageUrls, View.OnClickListener clickListener) {
         this.context = context;
         this.pageUrls = pageUrls;
+        this.clickListener = clickListener; // <-- SIMPAN LISTENERNYA
     }
 
     @NonNull
@@ -30,6 +33,9 @@ public class PageAdapter extends RecyclerView.Adapter<PageAdapter.PageViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull PageViewHolder holder, int position) {
+        // Atur listener untuk setiap halaman gambar
+        holder.itemView.setOnClickListener(clickListener);
+
         Glide.with(context)
                 .load(pageUrls.get(position))
                 .placeholder(R.drawable.ic_image_placeholder)
