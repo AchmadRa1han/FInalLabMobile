@@ -8,14 +8,16 @@ import com.example.komikfinale.data.local.AppDatabase;
 import com.example.komikfinale.data.local.MangaDao;
 import com.example.komikfinale.data.remote.MangaApiService;
 import com.example.komikfinale.data.remote.RetrofitClient;
+import com.example.komikfinale.model.AtHomeServerResponse;
 import com.example.komikfinale.model.Chapter;
 import com.example.komikfinale.model.ChapterListResponse;
+import com.example.komikfinale.model.Genre;
+import com.example.komikfinale.model.GenreListResponse;
 import com.example.komikfinale.model.Manga;
 import com.example.komikfinale.model.MangaDetailResponse;
 import com.example.komikfinale.model.MangaListResponse;
 import java.util.List;
 import java.util.Map;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -40,15 +42,12 @@ public class MangaRepository {
 
     // --- METODE UNTUK API (NETWORK) ---
 
-    public void getMangaList(MutableLiveData<List<Manga>> mangaList, MutableLiveData<Boolean> isLoading, String query, Map<String, String> order) {
+    public void getMangaList(MutableLiveData<List<Manga>> mangaList, MutableLiveData<Boolean> isLoading, String query, Map<String, String> order, List<String> genreIds) {
         isLoading.setValue(true);
-
-        // Memecah Map 'order' menjadi parameter individual yang bisa bernilai null
         String latestOrder = order.get("latestUploadedChapter");
         String titleOrder = order.get("title");
 
-        // Memanggil API dengan parameter yang sudah dipisah untuk menghindari error 400
-        apiService.getMangaList(40, "cover_art", query, latestOrder, titleOrder).enqueue(new Callback<MangaListResponse>() {
+        apiService.getMangaList(40, "cover_art", query, latestOrder, titleOrder, genreIds).enqueue(new Callback<MangaListResponse>() {
             @Override
             public void onResponse(Call<MangaListResponse> call, Response<MangaListResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -64,6 +63,26 @@ public class MangaRepository {
                 Log.e("MangaRepository", "Gagal mengambil daftar manga: " + t.getMessage());
                 mangaList.postValue(null);
                 isLoading.postValue(false);
+            }
+        });
+    }
+
+    // --- TAMBAHKAN METHOD YANG HILANG INI ---
+    public void getGenreList(MutableLiveData<List<Genre>> genreList) {
+        apiService.getGenreList().enqueue(new Callback<GenreListResponse>() {
+            @Override
+            public void onResponse(Call<GenreListResponse> call, Response<GenreListResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    genreList.postValue(response.body().getData());
+                } else {
+                    genreList.postValue(null);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<GenreListResponse> call, Throwable t) {
+                Log.e("MangaRepository", "Gagal mengambil daftar genre: " + t.getMessage());
+                genreList.postValue(null);
             }
         });
     }
@@ -111,20 +130,13 @@ public class MangaRepository {
     public LiveData<List<Manga>> getAllFavorites() {
         return mangaDao.getAllFavoriteManga();
     }
-
     public LiveData<Manga> getIsFavorite(String mangaId) {
         return mangaDao.getFavoriteMangaById(mangaId);
     }
-
     public void insertFavorite(Manga manga) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            mangaDao.insert(manga);
-        });
+        AppDatabase.databaseWriteExecutor.execute(() -> mangaDao.insert(manga));
     }
-
     public void deleteFavorite(String mangaId) {
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            mangaDao.deleteById(mangaId);
-        });
+        AppDatabase.databaseWriteExecutor.execute(() -> mangaDao.deleteById(mangaId));
     }
 }

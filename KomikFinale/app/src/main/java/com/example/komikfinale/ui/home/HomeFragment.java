@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,11 +20,13 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.komikfinale.R;
+import com.example.komikfinale.model.Genre;
 import com.example.komikfinale.model.Manga;
 import com.example.komikfinale.ui.adapter.MangaAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class HomeFragment extends Fragment {
@@ -34,6 +37,11 @@ public class HomeFragment extends Fragment {
     private ProgressBar progressBar;
     private LinearLayout errorLayout;
     private Button btnRefresh;
+
+    // Variabel untuk menyimpan daftar genre dan status pilihan filter
+    private final List<Genre> allGenres = new ArrayList<>();
+    private boolean[] checkedGenres;
+    private final ArrayList<Integer> selectedGenreIndices = new ArrayList<>();
 
     public HomeFragment() {
         super(R.layout.fragment_home);
@@ -65,14 +73,13 @@ public class HomeFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        // Gunakan layout menu yang sudah kita buat
+        menu.clear(); // Hapus menu lama untuk mencegah duplikat
         inflater.inflate(R.menu.main_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
         SearchView searchView = (SearchView) searchItem.getActionView();
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            // Dipanggil saat pengguna menekan tombol enter/search di keyboard
             @Override
             public boolean onQueryTextSubmit(String query) {
                 homeViewModel.setQuery(query);
@@ -82,23 +89,20 @@ public class HomeFragment extends Fragment {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                // Kita tidak melakukan apa-apa saat teks berubah untuk menghindari terlalu banyak panggilan API
                 return false;
             }
         });
 
-        // Listener untuk mereset daftar saat tombol search ditutup
         searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
             @Override
             public boolean onMenuItemActionExpand(MenuItem item) {
-                return true; // Izinkan search view untuk terbuka
+                return true;
             }
 
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
-                // Saat search view ditutup, hapus query dan muat ulang data awal
                 homeViewModel.setQuery(null);
-                return true; // Izinkan search view untuk tertutup
+                return true;
             }
         });
     }
@@ -106,9 +110,14 @@ public class HomeFragment extends Fragment {
     // Method ini dipanggil saat salah satu item menu di ActionBar diklik
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        Map<String, String> orderMap = new HashMap<>();
         int itemId = item.getItemId();
 
+        if (itemId == R.id.action_filter) {
+            showGenreFilterDialog();
+            return true;
+        }
+
+        Map<String, String> orderMap = new HashMap<>();
         if (itemId == R.id.sort_by_latest) {
             orderMap.put("latestUploadedChapter", "desc");
             homeViewModel.setOrder(orderMap);
@@ -122,7 +131,8 @@ public class HomeFragment extends Fragment {
             homeViewModel.setOrder(orderMap);
             return true;
         }
-        // Biarkan item lain (seperti ganti tema) ditangani oleh MainActivity
+
+        // Biarkan item lain (seperti ganti tema) ditangani oleh Activity
         return super.onOptionsItemSelected(item);
     }
 
@@ -163,5 +173,59 @@ public class HomeFragment extends Fragment {
                 errorLayout.setVisibility(View.VISIBLE);
             }
         });
+
+        // Observer untuk mengambil daftar genre dari ViewModel
+        homeViewModel.getGenreList().observe(getViewLifecycleOwner(), genres -> {
+            if (genres != null) {
+                allGenres.clear();
+                allGenres.addAll(genres);
+            }
+        });
+    }
+
+    // Method untuk menampilkan dialog filter genre
+    private void showGenreFilterDialog() {
+        if (allGenres.isEmpty()) {
+            Toast.makeText(getContext(), "Daftar genre belum termuat, coba lagi sesaat", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] genreNames = new String[allGenres.size()];
+        checkedGenres = new boolean[allGenres.size()];
+        for (int i = 0; i < allGenres.size(); i++) {
+            genreNames[i] = allGenres.get(i).getAttributes().getName().getEn();
+            if (selectedGenreIndices.contains(i)) {
+                checkedGenres[i] = true;
+            }
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Filter Berdasarkan Genre");
+        builder.setMultiChoiceItems(genreNames, checkedGenres, (dialog, which, isChecked) -> {
+            if (isChecked) {
+                if (!selectedGenreIndices.contains(which)) {
+                    selectedGenreIndices.add(which);
+                }
+            } else {
+                selectedGenreIndices.remove(Integer.valueOf(which));
+            }
+        });
+
+        builder.setPositiveButton("Terapkan", (dialog, which) -> {
+            ArrayList<String> selectedGenreIds = new ArrayList<>();
+            for (int index : selectedGenreIndices) {
+                selectedGenreIds.add(allGenres.get(index).getId());
+            }
+            homeViewModel.setGenreFilter(selectedGenreIds);
+        });
+
+        builder.setNegativeButton("Batal", (dialog, which) -> dialog.dismiss());
+
+        builder.setNeutralButton("Reset", (dialog, which) -> {
+            selectedGenreIndices.clear();
+            homeViewModel.setGenreFilter(new ArrayList<>());
+        });
+
+        builder.create().show();
     }
 }

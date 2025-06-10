@@ -5,8 +5,10 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import com.example.komikfinale.model.Genre;
 import com.example.komikfinale.model.Manga;
 import com.example.komikfinale.repository.MangaRepository;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,57 +17,55 @@ public class HomeViewModel extends AndroidViewModel {
     private final MangaRepository mangaRepository;
     private final MutableLiveData<List<Manga>> mangaList;
     private final MutableLiveData<Boolean> isLoading;
+    private final MutableLiveData<List<Genre>> genreList;
 
-    // State untuk menyimpan kondisi sorting dan searching saat ini
-    private String currentQuery = null; // null berarti tidak sedang mencari
+    // State untuk menyimpan kondisi filter, sort, dan search saat ini
+    private String currentQuery = null;
     private final Map<String, String> currentOrder = new HashMap<>();
+    private List<String> currentGenreIds = new ArrayList<>();
 
     public HomeViewModel(@NonNull Application application) {
         super(application);
         mangaRepository = MangaRepository.getInstance(application);
         mangaList = new MutableLiveData<>();
         isLoading = new MutableLiveData<>();
+        genreList = new MutableLiveData<>();
 
-        // Mengatur urutan default saat pertama kali dibuka: Update Terbaru
+        // Mengatur urutan default
         currentOrder.put("latestUploadedChapter", "desc");
-        // Langsung ambil data dengan state default
+        // Memuat data awal
         fetchMangaData();
+        // Memuat daftar genre untuk dialog filter
+        fetchGenreList();
     }
 
     // --- LiveData untuk diobservasi oleh Fragment ---
-    public LiveData<List<Manga>> getMangaList() {
-        return mangaList;
-    }
-
-    public LiveData<Boolean> getIsLoading() {
-        return isLoading;
-    }
+    public LiveData<List<Manga>> getMangaList() { return mangaList; }
+    public LiveData<Boolean> getIsLoading() { return isLoading; }
+    public LiveData<List<Genre>> getGenreList() { return genreList; }
 
     // --- Aksi yang bisa dipanggil dari Fragment ---
-
-    /**
-     * Mengatur query pencarian baru dan memicu pengambilan data ulang.
-     * @param query Teks yang dicari. Beri nilai null untuk menghapus filter pencarian.
-     */
     public void setQuery(String query) {
         this.currentQuery = query;
         fetchMangaData();
     }
 
-    /**
-     * Mengatur urutan (sorting) baru dan memicu pengambilan data ulang.
-     * @param order Map yang berisi parameter order untuk API.
-     */
     public void setOrder(Map<String, String> order) {
         this.currentOrder.clear();
         this.currentOrder.putAll(order);
         fetchMangaData();
     }
 
-    /**
-     * Method pusat untuk mengambil data dari repository berdasarkan state saat ini.
-     */
+    public void setGenreFilter(List<String> genreIds) {
+        this.currentGenreIds = genreIds;
+        fetchMangaData();
+    }
+
+    private void fetchGenreList() {
+        mangaRepository.getGenreList(genreList);
+    }
+
     public void fetchMangaData() {
-        mangaRepository.getMangaList(mangaList, isLoading, currentQuery, currentOrder);
+        mangaRepository.getMangaList(mangaList, isLoading, currentQuery, currentOrder, currentGenreIds);
     }
 }

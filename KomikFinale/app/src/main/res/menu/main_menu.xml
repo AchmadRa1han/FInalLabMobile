@@ -16,11 +16,16 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_filter"
+        android:title="Filter Genre"
+        android:icon="@android:drawable/ic_menu_agenda"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_sort"
         android:title="Urutkan"
         android:icon="@android:drawable/ic_menu_sort_by_size"
-        app:showAsAction="ifRoom">
-
+        app:showAsAction="never">
         <menu>
             <item
                 android:id="@+id/sort_by_latest"

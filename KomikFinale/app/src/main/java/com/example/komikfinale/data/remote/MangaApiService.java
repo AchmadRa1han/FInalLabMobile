@@ -4,8 +4,11 @@ import androidx.annotation.Nullable;
 
 import com.example.komikfinale.model.AtHomeServerResponse;
 import com.example.komikfinale.model.ChapterListResponse;
+import com.example.komikfinale.model.GenreListResponse;
 import com.example.komikfinale.model.MangaDetailResponse;
 import com.example.komikfinale.model.MangaListResponse;
+
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
@@ -28,8 +31,13 @@ public interface MangaApiService {
             @Query("includes[]") String coverArt,
             @Query("title") @Nullable String title,
             @Query("order[latestUploadedChapter]") @Nullable String latest,
-            @Query("order[title]") @Nullable String titleOrder
+            @Query("order[title]") @Nullable String titleOrder,
+            @Query("includedTags[]") @Nullable List<String> includedTags // <-- TAMBAHKAN INI
     );
+
+    @GET("manga/tag")
+    Call<GenreListResponse> getGenreList();
+
 
     /**
      * Mengambil detail dari satu manga berdasarkan ID.
