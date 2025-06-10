@@ -1,5 +1,7 @@
 package com.example.komikfinale.data.remote;
 
+import androidx.annotation.Nullable;
+
 import com.example.komikfinale.model.AtHomeServerResponse;
 import com.example.komikfinale.model.ChapterListResponse;
 import com.example.komikfinale.model.MangaDetailResponse;
@@ -11,38 +13,43 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Url;
 
-/**
- * Interface ini mendefinisikan semua endpoint API yang akan digunakan dalam aplikasi.
- */
 public interface MangaApiService {
 
     /**
-     * Mengambil daftar manga.
-     * @param coverArt dengan nilai "cover_art", meminta data gambar sampul.
-     * @param limit jumlah manga yang ingin diambil.
-     * @return sebuah objek Call yang berisi MangaListResponse.
+     * Mengambil daftar manga. Versi ini menggunakan parameter yang spesifik dan nullable
+     * untuk stabilitas yang lebih baik.
+     * @param title Judul yang dicari (opsional).
+     * @param latest Parameter untuk sorting berdasarkan update terbaru (opsional).
+     * @param titleOrder Parameter untuk sorting berdasarkan judul (opsional).
      */
     @GET("manga")
     Call<MangaListResponse> getMangaList(
+            @Query("limit") int limit,
             @Query("includes[]") String coverArt,
-            @Query("limit") int limit // <-- Parameter limit ada di sini
+            @Query("title") @Nullable String title,
+            @Query("order[latestUploadedChapter]") @Nullable String latest,
+            @Query("order[title]") @Nullable String titleOrder
     );
 
     /**
-     * Mengambil informasi detail dari satu manga spesifik berdasarkan ID-nya.
-     * @param mangaId ID dari manga yang ingin diambil detailnya.
-     * @param coverArt dengan nilai "cover_art", meminta data gambar sampul.
-     * @return sebuah objek Call yang berisi MangaDetailResponse.
+     * Mengambil detail dari satu manga berdasarkan ID.
      */
     @GET("manga/{id}")
     Call<MangaDetailResponse> getMangaDetails(
             @Path("id") String mangaId,
-            @Query("includes[]") String coverArt // <-- Hapus parameter limit dari sini
+            @Query("includes[]") String coverArt
     );
+
+    /**
+     * Mengambil daftar chapter. Menggunakan @Url karena URL-nya lebih kompleks
+     * dengan parameter sorting dan bahasa yang sudah kita tentukan.
+     */
     @GET
     Call<ChapterListResponse> getChapterList(@Url String url);
 
+    /**
+     * Mengambil informasi server dan halaman untuk satu chapter.
+     */
     @GET("/at-home/server/{chapterId}")
     Call<AtHomeServerResponse> getChapterPages(@Path("chapterId") String chapterId);
-
 }
