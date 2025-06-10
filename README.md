@@ -10,7 +10,7 @@ Aplikasi Android untuk menjelajahi, menyimpan, dan membaca informasi manga, dibu
 
 ## Deskripsi Aplikasi
 
-KomikFinale adalah aplikasi katalog manga yang memungkinkan pengguna untuk menemukan manga terbaru dan terpopuler dari API publik MangaDex. Pengguna dapat melihat detail informasi dari setiap manga, termasuk deskripsi dan daftar chapter yang tersedia dalam bahasa Inggris. Aplikasi ini juga dilengkapi dengan fitur "Favorit" yang memungkinkan pengguna menyimpan manga pilihannya ke dalam database lokal di perangkat, sehingga bisa diakses kembali bahkan saat tidak ada koneksi internet (offline).
+KomikFinale adalah aplikasi katalog manga yang memungkinkan pengguna untuk menemukan manga terbaru dan terpopuler dari API publik MangaDex. Pengguna dapat melihat detail informasi dari setiap manga, termasuk deskripsi dan daftar chapter yang tersedia dalam bahasa Inggris.
 
 Proyek ini dibuat untuk memenuhi semua spesifikasi teknis yang diberikan dalam Tugas Final Lab Mobile 2025.
 
