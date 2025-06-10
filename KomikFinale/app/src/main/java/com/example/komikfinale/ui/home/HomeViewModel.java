@@ -15,14 +15,19 @@ import java.util.Map;
 
 public class HomeViewModel extends AndroidViewModel {
     private final MangaRepository mangaRepository;
+
+    // LiveData untuk diobservasi oleh UI
     private final MutableLiveData<List<Manga>> mangaList;
     private final MutableLiveData<Boolean> isLoading;
     private final MutableLiveData<List<Genre>> genreList;
 
-    // State untuk menyimpan kondisi filter, sort, dan search saat ini
+    // State untuk menyimpan kondisi filter, sort, search, dan pagination saat ini
     private String currentQuery = null;
     private final Map<String, String> currentOrder = new HashMap<>();
     private List<String> currentGenreIds = new ArrayList<>();
+    private int currentPage = 1;
+    private int offset = 0;
+    private static final int LIMIT_PER_PAGE = 20; // Jumlah item per halaman
 
     public HomeViewModel(@NonNull Application application) {
         super(application);
@@ -31,11 +36,11 @@ public class HomeViewModel extends AndroidViewModel {
         isLoading = new MutableLiveData<>();
         genreList = new MutableLiveData<>();
 
-        // Mengatur urutan default
+        // Mengatur urutan default saat pertama kali dibuka
         currentOrder.put("latestUploadedChapter", "desc");
-        // Memuat data awal
+
+        // Memuat data awal dan daftar genre
         fetchMangaData();
-        // Memuat daftar genre untuk dialog filter
         fetchGenreList();
     }
 
@@ -43,29 +48,55 @@ public class HomeViewModel extends AndroidViewModel {
     public LiveData<List<Manga>> getMangaList() { return mangaList; }
     public LiveData<Boolean> getIsLoading() { return isLoading; }
     public LiveData<List<Genre>> getGenreList() { return genreList; }
+    public int getCurrentPage() { return currentPage; }
+
 
     // --- Aksi yang bisa dipanggil dari Fragment ---
+
+    public void nextPage() {
+        currentPage++;
+        offset = (currentPage - 1) * LIMIT_PER_PAGE;
+        fetchMangaData();
+    }
+
+    public void prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            offset = (currentPage - 1) * LIMIT_PER_PAGE;
+            fetchMangaData();
+        }
+    }
+
+    // Saat filter, sort, atau search diubah, selalu reset ke halaman pertama
     public void setQuery(String query) {
         this.currentQuery = query;
-        fetchMangaData();
+        resetToFirstPage();
     }
 
     public void setOrder(Map<String, String> order) {
         this.currentOrder.clear();
         this.currentOrder.putAll(order);
-        fetchMangaData();
+        resetToFirstPage();
     }
 
     public void setGenreFilter(List<String> genreIds) {
         this.currentGenreIds = genreIds;
+        resetToFirstPage();
+    }
+
+    private void resetToFirstPage() {
+        this.currentPage = 1;
+        this.offset = 0;
         fetchMangaData();
     }
+
+    // --- Method Pusat untuk Pengambilan Data ---
 
     private void fetchGenreList() {
         mangaRepository.getGenreList(genreList);
     }
 
     public void fetchMangaData() {
-        mangaRepository.getMangaList(mangaList, isLoading, currentQuery, currentOrder, currentGenreIds);
+        mangaRepository.getMangaList(mangaList, isLoading, currentQuery, currentOrder, currentGenreIds, offset);
     }
 }

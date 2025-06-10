@@ -42,12 +42,19 @@ public class MangaRepository {
 
     // --- METODE UNTUK API (NETWORK) ---
 
-    public void getMangaList(MutableLiveData<List<Manga>> mangaList, MutableLiveData<Boolean> isLoading, String query, Map<String, String> order, List<String> genreIds) {
+    /**
+     * Mengambil daftar manga dengan semua parameter: search, sort, filter, dan pagination.
+     * @param query Teks pencarian.
+     * @param order Map untuk sorting.
+     * @param genreIds List ID genre untuk filter.
+     * @param offset Parameter untuk halaman (pagination).
+     */
+    public void getMangaList(MutableLiveData<List<Manga>> mangaList, MutableLiveData<Boolean> isLoading, String query, Map<String, String> order, List<String> genreIds, int offset) {
         isLoading.setValue(true);
         String latestOrder = order.get("latestUploadedChapter");
         String titleOrder = order.get("title");
 
-        apiService.getMangaList(40, "cover_art", query, latestOrder, titleOrder, genreIds).enqueue(new Callback<MangaListResponse>() {
+        apiService.getMangaList(20, offset, "cover_art", query, latestOrder, titleOrder, genreIds).enqueue(new Callback<MangaListResponse>() {
             @Override
             public void onResponse(Call<MangaListResponse> call, Response<MangaListResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -67,7 +74,6 @@ public class MangaRepository {
         });
     }
 
-    // --- TAMBAHKAN METHOD YANG HILANG INI ---
     public void getGenreList(MutableLiveData<List<Genre>> genreList) {
         apiService.getGenreList().enqueue(new Callback<GenreListResponse>() {
             @Override
@@ -78,7 +84,6 @@ public class MangaRepository {
                     genreList.postValue(null);
                 }
             }
-
             @Override
             public void onFailure(Call<GenreListResponse> call, Throwable t) {
                 Log.e("MangaRepository", "Gagal mengambil daftar genre: " + t.getMessage());

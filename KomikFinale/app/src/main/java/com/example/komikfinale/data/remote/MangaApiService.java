@@ -28,6 +28,7 @@ public interface MangaApiService {
     @GET("manga")
     Call<MangaListResponse> getMangaList(
             @Query("limit") int limit,
+            @Query("offset") int offset,
             @Query("includes[]") String coverArt,
             @Query("title") @Nullable String title,
             @Query("order[latestUploadedChapter]") @Nullable String latest,

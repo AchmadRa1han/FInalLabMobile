@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -38,7 +39,12 @@ public class HomeFragment extends Fragment {
     private LinearLayout errorLayout;
     private Button btnRefresh;
 
-    // Variabel untuk menyimpan daftar genre dan status pilihan filter
+    // View untuk Pagination
+    private LinearLayout paginationControls;
+    private Button btnPrevPage, btnNextPage;
+    private TextView tvPageNumber;
+
+    // Variabel untuk Filter Genre
     private final List<Genre> allGenres = new ArrayList<>();
     private boolean[] checkedGenres;
     private final ArrayList<Integer> selectedGenreIndices = new ArrayList<>();
@@ -50,7 +56,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Memberitahu sistem bahwa fragment ini ingin menambahkan item ke menu di ActionBar
         setHasOptionsMenu(true);
     }
 
@@ -64,16 +69,19 @@ public class HomeFragment extends Fragment {
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         observeViewModel();
 
-        btnRefresh.setOnClickListener(v -> {
-            homeViewModel.fetchMangaData();
-        });
+        setupListeners();
     }
 
-    // Method ini dipanggil untuk membuat menu di ActionBar
+    private void setupListeners() {
+        btnRefresh.setOnClickListener(v -> homeViewModel.fetchMangaData());
+        btnNextPage.setOnClickListener(v -> homeViewModel.nextPage());
+        btnPrevPage.setOnClickListener(v -> homeViewModel.prevPage());
+    }
+
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        menu.clear(); // Hapus menu lama untuk mencegah duplikat
+        menu.clear();
         inflater.inflate(R.menu.main_menu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -83,22 +91,16 @@ public class HomeFragment extends Fragment {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 homeViewModel.setQuery(query);
-                searchView.clearFocus(); // Sembunyikan keyboard
+                searchView.clearFocus();
                 return true;
             }
-
             @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
-            }
+            public boolean onQueryTextChange(String newText) { return false; }
         });
 
         searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
             @Override
-            public boolean onMenuItemActionExpand(MenuItem item) {
-                return true;
-            }
-
+            public boolean onMenuItemActionExpand(MenuItem item) { return true; }
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
                 homeViewModel.setQuery(null);
@@ -107,11 +109,9 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    // Method ini dipanggil saat salah satu item menu di ActionBar diklik
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-
         if (itemId == R.id.action_filter) {
             showGenreFilterDialog();
             return true;
@@ -132,17 +132,18 @@ public class HomeFragment extends Fragment {
             return true;
         }
 
-        // Biarkan item lain (seperti ganti tema) ditangani oleh Activity
         return super.onOptionsItemSelected(item);
     }
-
-    // --- Helper Methods ---
 
     private void bindViews(View view) {
         recyclerView = view.findViewById(R.id.rv_manga);
         progressBar = view.findViewById(R.id.progress_bar);
         errorLayout = view.findViewById(R.id.layout_error);
         btnRefresh = view.findViewById(R.id.btn_refresh);
+        paginationControls = view.findViewById(R.id.pagination_controls);
+        btnPrevPage = view.findViewById(R.id.btn_prev_page);
+        btnNextPage = view.findViewById(R.id.btn_next_page);
+        tvPageNumber = view.findViewById(R.id.tv_page_number);
     }
 
     private void setupRecyclerView() {
@@ -153,12 +154,11 @@ public class HomeFragment extends Fragment {
 
     private void observeViewModel() {
         homeViewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             if (isLoading) {
-                progressBar.setVisibility(View.VISIBLE);
                 recyclerView.setVisibility(View.GONE);
                 errorLayout.setVisibility(View.GONE);
-            } else {
-                progressBar.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.GONE);
             }
         });
 
@@ -167,14 +167,19 @@ public class HomeFragment extends Fragment {
             if (mangaList != null) {
                 recyclerView.setVisibility(View.VISIBLE);
                 errorLayout.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.VISIBLE);
                 adapter.updateMangaList(mangaList);
+
+                tvPageNumber.setText("Page " + homeViewModel.getCurrentPage());
+                btnPrevPage.setEnabled(homeViewModel.getCurrentPage() > 1);
+
             } else {
                 recyclerView.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.GONE);
                 errorLayout.setVisibility(View.VISIBLE);
             }
         });
 
-        // Observer untuk mengambil daftar genre dari ViewModel
         homeViewModel.getGenreList().observe(getViewLifecycleOwner(), genres -> {
             if (genres != null) {
                 allGenres.clear();
@@ -183,7 +188,6 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    // Method untuk menampilkan dialog filter genre
     private void showGenreFilterDialog() {
         if (allGenres.isEmpty()) {
             Toast.makeText(getContext(), "Daftar genre belum termuat, coba lagi sesaat", Toast.LENGTH_SHORT).show();
