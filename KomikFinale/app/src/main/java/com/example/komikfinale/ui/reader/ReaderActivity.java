@@ -11,23 +11,19 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.komikfinale.R;
 import com.example.komikfinale.data.remote.MangaApiService;
 import com.example.komikfinale.data.remote.RetrofitClient;
 import com.example.komikfinale.model.AtHomeServerResponse;
 import com.example.komikfinale.ui.MainActivity;
 import com.example.komikfinale.ui.adapter.PageAdapter;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -37,6 +33,8 @@ public class ReaderActivity extends AppCompatActivity {
     // Kunci untuk Intent Extra
     public static final String EXTRA_CHAPTER_IDS = "extra_chapter_ids";
     public static final String EXTRA_CHAPTER_POSITION = "extra_chapter_position";
+    public static final String EXTRA_CHAPTER_NUMBER = "extra_chapter_number"; // <-- KUNCI BARU
+    public static final String EXTRA_CHAPTER_TITLE = "extra_chapter_title";   // <-- KUNCI BARU
 
     // View Components
     private RecyclerView rvPages;
@@ -56,28 +54,38 @@ public class ReaderActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reader);
 
-        // Inisialisasi semua view dari layout
         bindViews();
 
-        // Membuat listener untuk tap pada halaman
         View.OnClickListener pageClickListener = v -> toggleControlsVisibility();
-
-        // Menyiapkan RecyclerView dan Adapter
         pageAdapter = new PageAdapter(this, pageUrls, pageClickListener);
         rvPages.setAdapter(pageAdapter);
 
-        // Menyiapkan semua listener untuk tombol dan scroll
         setupListeners();
 
-        // Mengambil data dari Intent yang dikirim oleh ChapterAdapter
+        // Mengambil semua data dari Intent
         allChapterIds = getIntent().getStringArrayListExtra(EXTRA_CHAPTER_IDS);
         currentChapterPosition = getIntent().getIntExtra(EXTRA_CHAPTER_POSITION, 0);
 
-        // Memuat chapter jika datanya valid
+        // --- PERBAIKAN JUDUL DI SINI ---
+        String initialChapterNumber = getIntent().getStringExtra(EXTRA_CHAPTER_NUMBER);
+        String initialChapterTitle = getIntent().getStringExtra(EXTRA_CHAPTER_TITLE);
+        updateReaderTitle(initialChapterNumber, initialChapterTitle);
+        // --- AKHIR PERBAIKAN JUDUL ---
+
         if (allChapterIds != null && !allChapterIds.isEmpty()) {
             loadChapter();
         }
     }
+
+    private void updateReaderTitle(String number, String title) {
+        String displayText = "Chapter " + number;
+        if (title != null && !title.isEmpty()) {
+            displayText += ": " + title;
+        }
+        tvReaderTitle.setText(displayText);
+    }
+
+    // ... (sisa semua method lain di ReaderActivity tidak ada perubahan)
 
     private void bindViews() {
         rvPages = findViewById(R.id.rv_pages);
@@ -94,36 +102,29 @@ public class ReaderActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnBack.setOnClickListener(v -> onBackPressed());
-
         btnHome.setOnClickListener(v -> {
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
             finish();
         });
-
         btnChangeTheme.setOnClickListener(v -> toggleTheme());
-
         btnPrevChapter.setOnClickListener(v -> {
             if (currentChapterPosition > 0) {
                 currentChapterPosition--;
                 loadChapter();
             }
         });
-
         btnNextChapter.setOnClickListener(v -> {
             if (currentChapterPosition < allChapterIds.size() - 1) {
                 currentChapterPosition++;
                 loadChapter();
             }
         });
-
-        // Menyembunyikan kontrol secara otomatis saat pengguna mulai scroll
         rvPages.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                // Jika pengguna scroll ke bawah (dy > 5) dan kontrol sedang terlihat, sembunyikan.
                 if (dy > 5 && topControls.getVisibility() == View.VISIBLE) {
                     toggleControlsVisibility();
                 }
@@ -131,21 +132,16 @@ public class ReaderActivity extends AppCompatActivity {
         });
     }
 
-    // Memuat data untuk chapter yang sedang aktif
     private void loadChapter() {
         updateChapterNavButtons();
-        tvReaderTitle.setText("Chapter " + (currentChapterPosition + 1)); // Contoh judul
-
-        // Bersihkan halaman dari chapter sebelumnya dan reset adapter
+        // Judul sekarang tidak diatur di sini lagi untuk mencegah reset
         pageUrls.clear();
         pageAdapter.notifyDataSetChanged();
-        rvPages.scrollToPosition(0); // Selalu mulai dari atas
-
+        rvPages.scrollToPosition(0);
         String chapterId = allChapterIds.get(currentChapterPosition);
         fetchChapterPages(chapterId);
     }
 
-    // Mengambil data halaman dari API
     private void fetchChapterPages(String chapterId) {
         progressBar.setVisibility(View.VISIBLE);
         MangaApiService apiService = RetrofitClient.getClient().create(MangaApiService.class);
@@ -182,7 +178,6 @@ public class ReaderActivity extends AppCompatActivity {
         int newNightMode = (currentNightMode == Configuration.UI_MODE_NIGHT_YES) ?
                 AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES;
         AppCompatDelegate.setDefaultNightMode(newNightMode);
-
         SharedPreferences.Editor editor = getSharedPreferences("theme_prefs", MODE_PRIVATE).edit();
         editor.putInt("night_mode", newNightMode);
         editor.apply();
@@ -195,10 +190,7 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void updateChapterNavButtons() {
-        // Tombol Prev akan muncul hanya jika kita tidak di chapter pertama
         btnPrevChapter.setVisibility(currentChapterPosition > 0 ? View.VISIBLE : View.INVISIBLE);
-
-        // Tombol Next akan muncul hanya jika kita tidak di chapter terakhir
         btnNextChapter.setVisibility(currentChapterPosition < allChapterIds.size() - 1 ? View.VISIBLE : View.INVISIBLE);
     }
 }
