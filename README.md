@@ -2,9 +2,9 @@
 
 Aplikasi Android untuk menjelajahi, menyimpan, dan membaca informasi manga, dibuat sebagai Proyek Tugas Akhir Lab Mobile 2025.
 
-**Nama:** [Nama Lengkap Anda]
-**NIM:** [NIM Anda]
-**Grup Asistensi:** [Contoh: Mobile-1]
+**Nama:** Andi Achmad Raihan
+**NIM:** H071231077
+**Grup Asistensi:** Mobile-10
 
 ---
 
