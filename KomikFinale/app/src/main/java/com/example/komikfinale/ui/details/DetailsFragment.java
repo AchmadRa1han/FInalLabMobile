@@ -19,9 +19,12 @@ import com.bumptech.glide.Glide;
 import com.example.komikfinale.R;
 import com.example.komikfinale.model.Manga;
 import com.example.komikfinale.ui.adapter.ChapterAdapter;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DetailsFragment extends Fragment {
 
@@ -30,6 +33,7 @@ public class DetailsFragment extends Fragment {
     private ImageView ivCover;
     private ProgressBar progressBar;
     private FloatingActionButton fabFavorite;
+    private ChipGroup chipGroupGenres;
     private RecyclerView rvChapters;
     private ChapterAdapter chapterAdapter;
 
@@ -68,12 +72,13 @@ public class DetailsFragment extends Fragment {
         progressBar = view.findViewById(R.id.progress_bar_detail);
         fabFavorite = view.findViewById(R.id.fab_favorite);
         rvChapters = view.findViewById(R.id.rv_chapters);
+        chipGroupGenres = view.findViewById(R.id.chip_group_genres);
     }
 
     private void setupChapterRecyclerView() {
+        // Menggunakan RecyclerView untuk menampilkan daftar chapter.
         chapterAdapter = new ChapterAdapter(getContext(), new ArrayList<>());
         rvChapters.setAdapter(chapterAdapter);
-        // Kita tidak perlu set LayoutManager karena sudah diatur di XML
     }
 
     private void observeViewModel() {
@@ -84,12 +89,17 @@ public class DetailsFragment extends Fragment {
         viewModel.getMangaDetail().observe(getViewLifecycleOwner(), manga -> {
             if (manga != null) {
                 this.currentManga = manga;
+
                 tvTitle.setText(manga.getAttributes().getTitle().getEn());
 
-                if (manga.getAttributes().getDescription() != null) {
+                if (manga.getAttributes().getDescription() != null && manga.getAttributes().getDescription().getEn() != null) {
                     tvDescription.setText(manga.getAttributes().getDescription().getEn());
                 } else {
                     tvDescription.setText("Deskripsi tidak tersedia.");
+                }
+
+                if (manga.getAttributes().getTags() != null) {
+                    displayGenres(manga.getAttributes().getTags());
                 }
 
                 String coverFilename = manga.coverFilename;
@@ -129,6 +139,15 @@ public class DetailsFragment extends Fragment {
             }
             setupFavoriteButtonListener();
         });
+    }
+
+    private void displayGenres(List<Manga.Tag> tags) {
+        chipGroupGenres.removeAllViews();
+        for (Manga.Tag tag : tags) {
+            Chip chip = new Chip(getContext());
+            chip.setText(tag.getAttributes().getName().getEn());
+            chipGroupGenres.addView(chip);
+        }
     }
 
     private void setupFavoriteButtonListener() {

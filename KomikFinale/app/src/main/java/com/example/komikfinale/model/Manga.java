@@ -10,36 +10,24 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
-/**
- * Kelas Model untuk Manga. Bertindak sebagai POJO untuk data dari API (menggunakan Gson)
- * dan juga sebagai Entity untuk tabel database (menggunakan Room).
- */
 @Entity(tableName = "manga_favorites")
 public class Manga {
 
-    // @PrimaryKey adalah kunci unik untuk setiap baris di tabel database.
     @PrimaryKey
     @NonNull
     @SerializedName("id")
     private String id;
 
-    // @Embedded memungkinkan kita menyimpan objek lain (MangaAttributes)
-    // seolah-olah field-fieldnya adalah kolom di tabel ini.
     @Embedded
     @SerializedName("attributes")
     private MangaAttributes attributes;
 
-    // @Ignore memberitahu Room untuk tidak menyimpan field ini ke database,
-    // karena kita hanya butuh ini saat mengambil data dari API untuk parsing gambar.
     @Ignore
     @SerializedName("relationships")
     private List<Relationship> relationships;
 
-    // Field ini TIDAK di-ignore, agar Room menyimpannya di database.
-    // Ini digunakan untuk menyimpan nama file gambar agar bisa ditampilkan saat offline.
     public String coverFilename;
 
-    // Room memerlukan constructor kosong untuk membuat objek.
     public Manga() {
         // Diperlukan oleh Room
     }
@@ -56,20 +44,30 @@ public class Manga {
     public String getCoverFilename() { return coverFilename; }
     public void setCoverFilename(String coverFilename) { this.coverFilename = coverFilename; }
 
-    // --- Kelas-kelas inner untuk data bersarang (nested) ---
+    // --- Kelas-kelas inner ---
 
-    // Fokus ubah di dalam kelas ini
     public static class MangaAttributes {
 
-        // UBAH INI: Tambahkan prefix "title_"
         @Embedded(prefix = "title_")
         @SerializedName("title")
         private Title title;
 
-        // UBAH INI: Tambahkan prefix "description_"
         @Embedded(prefix = "description_")
         @SerializedName("description")
         private Description description;
+
+        // --- PERBAIKAN DI BAGIAN INI ---
+
+        // 1. Tambahkan anotasi @Ignore agar Room tidak mencoba menyimpan List ini
+        @Ignore
+        @SerializedName("tags")
+        private List<Tag> tags;
+
+        // 2. Tambahkan Getter dan Setter untuk tags
+        public List<Tag> getTags() { return tags; }
+        public void setTags(List<Tag> tags) { this.tags = tags; }
+
+        // --- AKHIR DARI PERBAIKAN ---
 
         public Title getTitle() { return title; }
         public void setTitle(Title title) { this.title = title; }
@@ -80,7 +78,6 @@ public class Manga {
     public static class Title {
         @SerializedName("en")
         private String en;
-
         public String getEn() { return en; }
         public void setEn(String en) { this.en = en; }
     }
@@ -88,27 +85,40 @@ public class Manga {
     public static class Description {
         @SerializedName("en")
         private String en;
-
         public String getEn() { return en; }
         public void setEn(String en) { this.en = en; }
     }
 
-    // Kelas untuk menampung data 'relationships' dari API
+    // 3. Pastikan kelas Tag didefinisikan di sini
+    public static class Tag {
+        @SerializedName("attributes")
+        private TagAttributes attributes;
+        public TagAttributes getAttributes() { return attributes; }
+
+        public static class TagAttributes {
+            @SerializedName("name")
+            private Name name;
+            public Name getName() { return name; }
+        }
+
+        public static class Name {
+            @SerializedName("en")
+            private String en;
+            public String getEn() { return en; }
+        }
+    }
+
     public static class Relationship {
         @SerializedName("type")
         private String type;
-
         @SerializedName("attributes")
         private CoverAttributes attributes;
-
         public String getType() { return type; }
         public CoverAttributes getAttributes() { return attributes; }
 
-        // Kelas untuk menampung nama file gambar sampul
         public static class CoverAttributes {
             @SerializedName("fileName")
             private String fileName;
-
             public String getFileName() { return fileName; }
         }
     }
