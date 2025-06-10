@@ -38,15 +38,18 @@ public class HomeFragment extends Fragment {
     private ProgressBar progressBar;
     private LinearLayout errorLayout;
     private Button btnRefresh;
+
+    // View untuk Pagination
     private LinearLayout paginationControls;
     private Button btnPrevPage, btnNextPage;
     private TextView tvPageNumber;
 
+    // Variabel untuk Filter Genre
     private final List<Genre> allGenres = new ArrayList<>();
     private boolean[] checkedGenres;
     private final ArrayList<Integer> selectedGenreIndices = new ArrayList<>();
 
-    private static final int ITEMS_PER_PAGE = 20; // Definisikan limit di sini
+    private static final int ITEMS_PER_PAGE = 20;
 
     public HomeFragment() {
         super(R.layout.fragment_home);
@@ -61,8 +64,10 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
         bindViews(view);
         setupRecyclerView();
+
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         observeViewModel();
         setupListeners();
@@ -72,65 +77,6 @@ public class HomeFragment extends Fragment {
         btnRefresh.setOnClickListener(v -> homeViewModel.fetchMangaData());
         btnNextPage.setOnClickListener(v -> homeViewModel.nextPage());
         btnPrevPage.setOnClickListener(v -> homeViewModel.prevPage());
-    }
-
-    private void observeViewModel() {
-        homeViewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-            if (isLoading) {
-                recyclerView.setVisibility(View.GONE);
-                errorLayout.setVisibility(View.GONE);
-                paginationControls.setVisibility(View.GONE);
-            }
-        });
-
-        homeViewModel.getMangaList().observe(getViewLifecycleOwner(), mangaList -> {
-            progressBar.setVisibility(View.GONE);
-            if (mangaList != null) {
-                recyclerView.setVisibility(View.VISIBLE);
-                errorLayout.setVisibility(View.GONE);
-                paginationControls.setVisibility(View.VISIBLE);
-                adapter.updateMangaList(mangaList);
-
-                // --- LOGIKA PERBAIKAN PAGINATION ADA DI SINI ---
-                tvPageNumber.setText("Page " + homeViewModel.getCurrentPage());
-                // Tombol Prev aktif jika halaman > 1
-                btnPrevPage.setEnabled(homeViewModel.getCurrentPage() > 1);
-                // Tombol Next aktif HANYA JIKA jumlah data yang dimuat sama dengan limit per halaman
-                btnNextPage.setEnabled(mangaList.size() == ITEMS_PER_PAGE);
-
-            } else {
-                recyclerView.setVisibility(View.GONE);
-                paginationControls.setVisibility(View.GONE);
-                errorLayout.setVisibility(View.VISIBLE);
-            }
-        });
-
-        homeViewModel.getGenreList().observe(getViewLifecycleOwner(), genres -> {
-            if (genres != null) {
-                allGenres.clear();
-                allGenres.addAll(genres);
-            }
-        });
-    }
-
-    // ... (sisa semua method lain di HomeFragment tidak ada perubahan)
-
-    private void bindViews(View view) {
-        recyclerView = view.findViewById(R.id.rv_manga);
-        progressBar = view.findViewById(R.id.progress_bar);
-        errorLayout = view.findViewById(R.id.layout_error);
-        btnRefresh = view.findViewById(R.id.btn_refresh);
-        paginationControls = view.findViewById(R.id.pagination_controls);
-        btnPrevPage = view.findViewById(R.id.btn_prev_page);
-        btnNextPage = view.findViewById(R.id.btn_next_page);
-        tvPageNumber = view.findViewById(R.id.tv_page_number);
-    }
-
-    private void setupRecyclerView() {
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        adapter = new MangaAdapter(getContext(), new ArrayList<>(), R.id.homeFragment);
-        recyclerView.setAdapter(adapter);
     }
 
     @Override
@@ -149,19 +95,13 @@ public class HomeFragment extends Fragment {
                 searchView.clearFocus();
                 return true;
             }
-
             @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
-            }
+            public boolean onQueryTextChange(String newText) { return false; }
         });
 
         searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
             @Override
-            public boolean onMenuItemActionExpand(MenuItem item) {
-                return true;
-            }
-
+            public boolean onMenuItemActionExpand(MenuItem item) { return true; }
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
                 homeViewModel.setQuery(null);
@@ -195,6 +135,63 @@ public class HomeFragment extends Fragment {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void bindViews(View view) {
+        recyclerView = view.findViewById(R.id.rv_manga);
+        progressBar = view.findViewById(R.id.progress_bar);
+        errorLayout = view.findViewById(R.id.layout_error);
+        btnRefresh = view.findViewById(R.id.btn_refresh);
+        paginationControls = view.findViewById(R.id.pagination_controls);
+        btnPrevPage = view.findViewById(R.id.btn_prev_page);
+        btnNextPage = view.findViewById(R.id.btn_next_page);
+        tvPageNumber = view.findViewById(R.id.tv_page_number);
+    }
+
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        adapter = new MangaAdapter(getContext(), new ArrayList<>(), R.id.homeFragment);
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void observeViewModel() {
+        homeViewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            if (isLoading) {
+                recyclerView.setVisibility(View.GONE);
+                errorLayout.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.GONE);
+            }
+        });
+
+        homeViewModel.getMangaList().observe(getViewLifecycleOwner(), mangaList -> {
+            progressBar.setVisibility(View.GONE);
+            if (mangaList != null) {
+                recyclerView.setVisibility(View.VISIBLE);
+                errorLayout.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.VISIBLE);
+                adapter.updateMangaList(mangaList);
+
+                // Perbaikan terakhir: otomatis scroll ke atas saat pindah halaman
+                recyclerView.scrollToPosition(0);
+
+                tvPageNumber.setText("Page " + homeViewModel.getCurrentPage());
+                btnPrevPage.setEnabled(homeViewModel.getCurrentPage() > 1);
+                btnNextPage.setEnabled(mangaList.size() == ITEMS_PER_PAGE);
+
+            } else {
+                recyclerView.setVisibility(View.GONE);
+                paginationControls.setVisibility(View.GONE);
+                errorLayout.setVisibility(View.VISIBLE);
+            }
+        });
+
+        homeViewModel.getGenreList().observe(getViewLifecycleOwner(), genres -> {
+            if (genres != null) {
+                allGenres.clear();
+                allGenres.addAll(genres);
+            }
+        });
     }
 
     private void showGenreFilterDialog() {
