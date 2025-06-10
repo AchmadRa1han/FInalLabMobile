@@ -18,9 +18,7 @@ Proyek ini dibuat untuk memenuhi semua spesifikasi teknis yang diberikan dalam T
 
 | Halaman Utama | Halaman Detail | Halaman Favorit (Library) |
 | :---: | :---: | :---: |
-| ![Home Screen](./path/to/your/screenshot_home.png) | ![Detail Screen](./path/to/your/screenshot_detail.png) | ![Library Screen](./path/to/your/screenshot_library.png) |
-
-*(Catatan: Unggah screenshot Anda ke dalam repositori dan ganti `./path/to/...` dengan lokasi file gambar Anda)*
+| ![Home Screen](./screenshots/homepage.jpg) | ![Detail Screen](./screenshots/details.jpg) | ![Library Screen](./screenshots/library.jpg) |
 
 ## Fitur Utama
 
